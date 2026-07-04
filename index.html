@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة علاقات العملاء والزيارات الميدانية</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for beautiful charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom styling for extra polish -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap');
+        body {
+            font-family: 'Cairo', sans-serif;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="h-full text-slate-800 flex flex-col md:flex-row overflow-hidden">
+
+    <!-- SIDEBAR FOR DESKTOP -->
+    <aside class="hidden md:flex flex-col w-64 bg-slate-900 text-white shrink-0">
+        <div class="p-6 border-b border-slate-800">
+            <div class="flex items-center space-x-3 space-x-reverse">
+                <div class="bg-indigo-600 p-2.5 rounded-lg text-white shadow-lg shadow-indigo-600/30">
+                    <i class="fa-solid fa-chart-line text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">النظام التنفيذي</h1>
+                    <span class="text-xs text-slate-400">لوحة الإدارة الشاملة</span>
+                </div>
+            </div>
+        </div>
+
+        <nav class="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
+            <button onclick="switchTab('dashboard')" id="btn-dashboard" class="nav-btn w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all">
+                <i class="fa-solid fa-gauge text-lg w-6 text-indigo-400"></i>
+                <span class="font-medium text-sm">لوحة التحكم</span>
+            </button>
+            <button onclick="switchTab('crm')" id="btn-crm" class="nav-btn w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all">
+                <i class="fa-solid fa-users text-lg w-6 text-emerald-400"></i>
+                <span class="font-medium text-sm">إدارة العملاء (CRM)</span>
+            </button>
+            <button onclick="switchTab('visits')" id="btn-visits" class="nav-btn w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all">
+                <i class="fa-solid fa-map-location-dot text-lg w-6 text-amber-400"></i>
+                <span class="font-medium text-sm">الزيارات الميدانية</span>
+            </button>
+            <button onclick="switchTab('tasks')" id="btn-tasks" class="nav-btn w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all">
+                <i class="fa-solid fa-list-check text-lg w-6 text-rose-400"></i>
+                <span class="font-medium text-sm">المهام والأنشطة</span>
+            </button>
+            <button onclick="switchTab('events')" id="btn-events" class="nav-btn w-full flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all">
+                <i class="fa-solid fa-calendar-days text-lg w-6 text-sky-400"></i>
+                <span class="font-medium text-sm">الفعاليات والمؤتمرات</span>
+            </button>
+        </nav>
+
+        <!-- Current User Brief Info -->
+        <div class="p-4 border-t border-slate-800 bg-slate-950/50">
+            <div class="flex items-center space-x-3 space-x-reverse cursor-pointer hover:bg-slate-800/50 p-2 rounded-lg transition-all" onclick="openProfileModal()">
+                <div class="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold text-lg shadow-inner">
+                    أ
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-bold truncate text-slate-100" id="user-name-display">أحمد محمد</p>
+                    <p class="text-xs text-slate-400 truncate">مدير العلاقات الخارجية</p>
+                </div>
+                <i class="fa-solid fa-chevron-left text-xs text-slate-500"></i>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MOBILE HEADER (Simplified without Hamburger Menu) -->
+    <div class="md:hidden bg-slate-900 text-white flex flex-col shrink-0">
+        <div class="flex items-center justify-between p-4 border-b border-slate-800">
+            <div class="flex items-center space-x-2 space-x-reverse">
+                <div class="bg-indigo-600 p-2 rounded-lg text-white">
+                    <i class="fa-solid fa-chart-line text-lg"></i>
+                </div>
+                <h1 class="font-bold text-md">النظام التنفيذي</h1>
+            </div>
+            <div class="flex items-center space-x-3 space-x-reverse">
+                <!-- Notifications button for mobile -->
+                <button onclick="switchTab('dashboard'); showToast('تم تحديث الإشعارات والتنبيهات', 'success');" class="p-1.5 text-slate-300 hover:text-white relative">
+                    <i class="fa-regular fa-bell text-lg"></i>
+                    <span class="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full"></span>
+                </button>
+                <button onclick="openProfileModal()" class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white font-bold text-sm shadow">
+                    أ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOTTOM NAVIGATION BAR FOR MOBILE (Native Application feel) -->
+    <div class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 text-slate-400 flex justify-around py-2 z-50 shadow-2xl">
+        <button onclick="switchTab('dashboard')" id="mob-btn-dashboard" class="mob-nav-btn flex flex-col items-center justify-center flex-1 py-1 text-indigo-400 transition-all">
+            <i class="fa-solid fa-gauge text-lg"></i>
+            <span class="text-[10px] mt-1 font-bold">الرئيسية</span>
+        </button>
+        <button onclick="switchTab('crm')" id="mob-btn-crm" class="mob-nav-btn flex flex-col items-center justify-center flex-1 py-1 text-slate-400 transition-all">
+            <i class="fa-solid fa-users text-lg"></i>
+            <span class="text-[10px] mt-1 font-bold">العملاء</span>
+        </button>
+        <button onclick="switchTab('visits')" id="mob-btn-visits" class="mob-nav-btn flex flex-col items-center justify-center flex-1 py-1 text-slate-400 transition-all">
+            <i class="fa-solid fa-map-location-dot text-lg"></i>
+            <span class="text-[10px] mt-1 font-bold">الزيارات</span>
+        </button>
+        <button onclick="switchTab('tasks')" id="mob-btn-tasks" class="mob-nav-btn flex flex-col items-center justify-center flex-1 py-1 text-slate-400 transition-all">
+            <i class="fa-solid fa-list-check text-lg"></i>
+            <span class="text-[10px] mt-1 font-bold">المهام</span>
+        </button>
+        <button onclick="switchTab('events')" id="mob-btn-events" class="mob-nav-btn flex flex-col items-center justify-center flex-1 py-1 text-slate-400 transition-all">
+            <i class="fa-solid fa-calendar-days text-lg"></i>
+            <span class="text-[10px] mt-1 font-bold">الفعاليات</span>
+        </button>
+    </div>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="flex-1 flex flex-col min-w-0 overflow-y-auto bg-slate-50">
+        <!-- Top Navigation Bar / Actions bar -->
+        <header class="bg-white border-b border-slate-200 h-16 shrink-0 hidden md:flex items-center justify-between px-8">
+            <div>
+                <h2 id="page-title" class="text-xl font-bold text-slate-800">لوحة التحكم التنفيذية</h2>
+            </div>
+            <div class="flex items-center space-x-4 space-x-reverse">
+                <!-- Notifications -->
+                <div class="relative">
+                    <button onclick="toggleNotifications()" class="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-full transition-all relative">
+                        <i class="fa-regular fa-bell text-lg"></i>
+                        <span class="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full"></span>
+                    </button>
+                    <!-- Notifications Dropdown -->
+                    <div id="notifications-dropdown" class="hidden absolute left-0 mt-2 w-80 bg-white border border-slate-200 rounded-xl shadow-xl z-50 py-2">
+                        <div class="px-4 py-2 font-bold text-sm text-slate-700 border-b border-slate-100 flex justify-between items-center">
+                            <span>الإشعارات</span>
+                            <span class="text-xs bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full font-normal">3 جديدة</span>
+                        </div>
+                        <div class="divide-y divide-slate-100 max-h-64 overflow-y-auto">
+                            <a href="#" class="block p-3.5 hover:bg-slate-50 transition-colors">
+                                <p class="text-xs text-indigo-600 font-semibold">مهمة جديدة مسندة</p>
+                                <p class="text-xs font-bold text-slate-800 mt-1">متابعة مع شركة النفط (أرامكو)</p>
+                                <span class="text-[10px] text-slate-400 block mt-1">قبل 5 دقائق</span>
+                            </a>
+                            <a href="#" class="block p-3.5 hover:bg-slate-50 transition-colors">
+                                <p class="text-xs text-amber-600 font-semibold">زيارة مكتملة</p>
+                                <p class="text-xs font-bold text-slate-800 mt-1">تم توثيق الزيارة الميدانية STC</p>
+                                <span class="text-[10px] text-slate-400 block mt-1">قبل ساعتين</span>
+                            </a>
+                            <a href="#" class="block p-3.5 hover:bg-slate-50 transition-colors">
+                                <p class="text-xs text-rose-600 font-semibold">تحديث مهم</p>
+                                <p class="text-xs font-bold text-slate-800 mt-1">تمت إضافة فعالية جديدة بقيمة 125K</p>
+                                <span class="text-[10px] text-slate-400 block mt-1">أمس</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profile Action Menu -->
+                <div class="flex items-center space-x-3 space-x-reverse border-r border-slate-200 pr-4">
+                    <span class="text-sm font-medium text-slate-700" id="user-header-name">أحمد محمد</span>
+                    <button onclick="openProfileModal()" class="w-9 h-9 rounded-full bg-slate-100 border border-slate-200 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-100 flex items-center justify-center transition-all">
+                        <i class="fa-regular fa-user"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- APP SCREENS CONTAINER (pb-20 added on mobile to prevent bottom menu overlaying content) -->
+        <div class="flex-1 p-4 md:p-8 pb-20 md:pb-8">
+
+            <!-- ================== SCREEN 1: DASHBOARD ================== -->
+            <section id="screen-dashboard" class="space-y-6">
+                <!-- Dashboard Filters -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-slate-200">
+                    <div>
+                        <h3 class="font-bold text-lg text-slate-800">مرحباً بك مجدداً، أحمد محمد 👋</h3>
+                        <p class="text-xs text-slate-500 mt-1">إليك ملخص الأداء والتقارير التنفيذية لليوم</p>
+                    </div>
+                    <div class="flex bg-slate-100 p-1 rounded-lg self-stretch sm:self-auto overflow-x-auto">
+                        <button onclick="changePeriod(0, this)" class="period-btn px-4 py-1.5 rounded-md text-xs font-semibold bg-white text-slate-800 shadow-sm transition-all flex-1 text-center whitespace-nowrap">اليوم</button>
+                        <button onclick="changePeriod(1, this)" class="period-btn px-4 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-800 transition-all flex-1 text-center whitespace-nowrap">الأسبوع</button>
+                        <button onclick="changePeriod(2, this)" class="period-btn px-4 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-800 transition-all flex-1 text-center whitespace-nowrap">الشهر</button>
+                        <button onclick="changePeriod(3, this)" class="period-btn px-4 py-1.5 rounded-md text-xs font-semibold text-slate-600 hover:text-slate-800 transition-all flex-1 text-center whitespace-nowrap">السنة</button>
+                    </div>
+                </div>
+
+                <!-- KPI CARDS -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+                        <div class="space-y-2">
+                            <span class="text-xs text-slate-500 font-semibold block">إجمالي العملاء</span>
+                            <span class="text-3xl font-extrabold text-slate-800 block" id="kpi-customers">24</span>
+                            <span class="text-xs text-emerald-600 font-bold flex items-center gap-1"><i class="fa-solid fa-circle-arrow-up"></i> +12% من الشهر الفائت</span>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg"><i class="fa-solid fa-users"></i></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+                        <div class="space-y-2">
+                            <span class="text-xs text-slate-500 font-semibold block">الزيارات الميدانية</span>
+                            <span class="text-3xl font-extrabold text-slate-800 block" id="kpi-visits">18</span>
+                            <span class="text-xs text-indigo-600 font-bold flex items-center gap-1"><i class="fa-solid fa-circle-arrow-up"></i> +8% من الأسبوع الفائت</span>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg"><i class="fa-solid fa-map-location-dot"></i></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+                        <div class="space-y-2">
+                            <span class="text-xs text-slate-500 font-semibold block">الفعاليات المخططة</span>
+                            <span class="text-3xl font-extrabold text-slate-800 block" id="kpi-events">6</span>
+                            <span class="text-xs text-sky-600 font-bold flex items-center gap-1"><i class="fa-solid fa-circle-arrow-up"></i> مستقرة ومؤكدة</span>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center text-lg"><i class="fa-solid fa-calendar-check"></i></div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+                        <div class="space-y-2">
+                            <span class="text-xs text-slate-500 font-semibold block">قيمة الفرص والعقود</span>
+                            <span class="text-2xl font-extrabold text-slate-800 block" id="kpi-revenue">380,000 ر.س</span>
+                            <span class="text-xs text-rose-600 font-bold flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i> مستهدف ربع سنوي متبقي</span>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-lg"><i class="fa-solid fa-sack-dollar"></i></div>
+                    </div>
+                </div>
+
+                <!-- GRAPHS AND CHARTS SECTION -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Line Chart -->
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 lg:col-span-2">
+                        <div class="flex justify-between items-center mb-4">
+                            <h4 class="font-bold text-sm text-slate-800">مؤشر أداء المبيعات والفرص المكتملة</h4>
+                            <span class="text-xs bg-slate-100 px-3 py-1 rounded-full text-slate-600 font-medium">محدث فوراً</span>
+                        </div>
+                        <div class="h-64 relative">
+                            <canvas id="salesChart"></canvas>
+                        </div>
+                    </div>
+                    <!-- Pie Chart -->
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200">
+                        <div class="flex justify-between items-center mb-4">
+                            <h4 class="font-bold text-sm text-slate-800">توزيع علاقات العملاء</h4>
+                            <span class="text-xs bg-slate-100 px-3 py-1 rounded-full text-slate-600 font-medium">النسبة المئوية</span>
+                        </div>
+                        <div class="h-64 relative flex items-center justify-center">
+                            <canvas id="clientDistributionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DYNAMIC ACTIVITIES & ALERTS -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Latest Completed Visits -->
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200">
+                        <h4 class="font-bold text-sm text-slate-800 mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-check text-emerald-500"></i> أحدث الزيارات الميدانية المنجزة
+                        </h4>
+                        <div class="space-y-4" id="recent-visits-list">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Pending Tasks -->
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200">
+                        <h4 class="font-bold text-sm text-slate-800 mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-hourglass-half text-amber-500"></i> مهام ذات أولوية بحاجة لمتابعة عاجلة
+                        </h4>
+                        <div class="space-y-4" id="recent-tasks-list">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- ================== SCREEN 2: CRM (CUSTOMERS) ================== -->
+            <section id="screen-crm" class="space-y-6 hidden">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h3 class="font-bold text-lg text-slate-800">إدارة علاقات العملاء والشركات</h3>
+                        <p class="text-xs text-slate-500 mt-1">عرض وتحديث بيانات الهيئات والشركات المصنفة</p>
+                    </div>
+                    <button onclick="openAddOrgModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-4 py-2.5 rounded-lg font-bold flex items-center gap-2 shadow-sm transition-all">
+                        <i class="fa-solid fa-plus"></i> إضافة مؤسسة جديدة
+                    </button>
+                </div>
+
+                <!-- Filters & Search -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white p-4 rounded-xl border border-slate-200">
+                    <div class="relative md:col-span-2">
+                        <i class="fa-solid fa-magnifying-glass absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <input type="text" id="search-crm" oninput="filterCRM()" placeholder="ابحث باسم المؤسسة أو القطاع..." class="w-full pl-4 pr-10 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <select id="filter-crm-class" onchange="filterCRM()" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                            <option value="الكل">كل التصنيفات</option>
+                            <option value="VIP">VIP</option>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                        </select>
+                    </div>
+                    <div>
+                        <select id="filter-crm-status" onchange="filterCRM()" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                            <option value="الكل">كل الحالات</option>
+                            <option value="active">نشط</option>
+                            <option value="inactive">غير نشط</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Customer Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="crm-grid">
+                    <!-- Populated dynamically -->
+                </div>
+            </section>
+
+
+            <!-- ================== SCREEN 3: VISITS ================== -->
+            <section id="screen-visits" class="space-y-6 hidden">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h3 class="font-bold text-lg text-slate-800">جدولة وتوثيق الزيارات الميدانية</h3>
+                        <p class="text-xs text-slate-500 mt-1">تتبع الزيارات المخططة والمكتملة والتفاصيل الجغرافية للعملاء</p>
+                    </div>
+                    <button onclick="openAddVisitModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-4 py-2.5 rounded-lg font-bold flex items-center gap-2 shadow-sm transition-all">
+                        <i class="fa-solid fa-plus"></i> إضافة زيارة جديدة
+                    </button>
+                </div>
+
+                <!-- Quick Filters -->
+                <div class="flex flex-wrap gap-2" id="visits-filter-bar">
+                    <button onclick="filterVisits('الكل', this)" class="visits-filter-btn px-4 py-1.5 rounded-full text-xs font-semibold bg-indigo-600 text-white shadow-sm transition-all">الكل</button>
+                    <button onclick="filterVisits('completed', this)" class="visits-filter-btn px-4 py-1.5 rounded-full text-xs font-semibold bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 transition-all">مكتملة</button>
+                    <button onclick="filterVisits('in_progress', this)" class="visits-filter-btn px-4 py-1.5 rounded-full text-xs font-semibold bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 transition-all">قيد التنفيذ</button>
+                    <button onclick="filterVisits('high_prob', this)" class="visits-filter-btn px-4 py-1.5 rounded-full text-xs font-semibold bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 transition-all">احتمالية نجاح عالية</button>
+                </div>
+
+                <!-- Map and Visits List Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- List of Visits (Left panel) -->
+                    <div class="lg:col-span-5 space-y-4 max-h-[600px] overflow-y-auto pr-1" id="visits-list">
+                        <!-- Populated dynamically -->
+                    </div>
+
+                    <!-- Virtual Interactive Map Panel (Right panel) -->
+                    <div class="lg:col-span-7 bg-white rounded-2xl border border-slate-200 p-4 flex flex-col h-[550px]">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="font-bold text-xs text-slate-700"><i class="fa-solid fa-map-marked-alt text-indigo-500"></i> نظام تحديد المواقع الجغرافي والزيارات الافتراضية</span>
+                            <span class="text-[10px] bg-emerald-50 text-emerald-600 font-bold px-2 py-0.5 rounded-full">محاكي GPS نشط</span>
+                        </div>
+                        <div class="flex-1 bg-slate-100 rounded-xl relative overflow-hidden border border-slate-200 flex flex-col items-center justify-center text-center p-6" id="map-canvas">
+                            <!-- Simple Mockup Interactive Map Elements -->
+                            <div class="absolute inset-0 opacity-40 bg-[radial-gradient(#94a3b8_1px,transparent_1px)] [background-size:16px_16px]"></div>
+                            <div class="absolute inset-0 bg-no-repeat bg-center opacity-10" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/e/e4/Saudi_Arabia_map_clean.svg'); background-size: contain;"></div>
+                            
+                            <!-- Riyadh Core Area Circle -->
+                            <div class="relative z-10 p-6 bg-white/95 rounded-2xl shadow-xl border border-slate-100 max-w-sm space-y-4">
+                                <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center text-xl mx-auto"><i class="fa-solid fa-location-crosshairs animate-pulse"></i></div>
+                                <div>
+                                    <h4 class="font-bold text-sm text-slate-800" id="map-target-org">يرجى تحديد زيارة لعرض موقعها</h4>
+                                    <p class="text-xs text-slate-500 mt-1" id="map-target-details">سيقوم نظام الخرائط بمزامنة خطوط العرض والطول والموقع التقديري فوراً.</p>
+                                </div>
+                                <div class="pt-2 border-t border-slate-100 flex justify-center gap-4 text-xs font-bold text-slate-600">
+                                    <span id="map-target-city"><i class="fa-solid fa-city text-indigo-400"></i> الرياض</span>
+                                    <span id="map-target-status"><i class="fa-solid fa-circle text-emerald-500 text-[10px]"></i> محددة</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- ================== SCREEN 4: TASKS ================== -->
+            <section id="screen-tasks" class="space-y-6 hidden">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h3 class="font-bold text-lg text-slate-800">إدارة المهام وتكليفات الأنشطة</h3>
+                        <p class="text-xs text-slate-500 mt-1">فرز ومتابعة المهام الموكلة للفريق والشركات المعنية</p>
+                    </div>
+                    <button onclick="openAddTaskModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-4 py-2.5 rounded-lg font-bold flex items-center gap-2 shadow-sm transition-all">
+                        <i class="fa-solid fa-plus"></i> إضافة مهمة جديدة
+                    </button>
+                </div>
+
+                <!-- Kanban Style / Custom Filter Task Lists -->
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    <!-- Column 1: New -->
+                    <div class="bg-slate-100/70 p-4 rounded-2xl border border-slate-200/50 space-y-4 flex flex-col h-[600px]">
+                        <div class="flex justify-between items-center px-1">
+                            <span class="font-bold text-xs text-slate-700 flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> مهام جديدة</span>
+                            <span class="text-[10px] bg-blue-50 text-blue-600 font-bold px-2 py-0.5 rounded-full" id="count-new">0</span>
+                        </div>
+                        <div class="flex-1 space-y-3 overflow-y-auto pr-1" id="tasks-new-col">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Column 2: In Progress -->
+                    <div class="bg-slate-100/70 p-4 rounded-2xl border border-slate-200/50 space-y-4 flex flex-col h-[600px]">
+                        <div class="flex justify-between items-center px-1">
+                            <span class="font-bold text-xs text-slate-700 flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> قيد التنفيذ</span>
+                            <span class="text-[10px] bg-amber-50 text-amber-600 font-bold px-2 py-0.5 rounded-full" id="count-progress">0</span>
+                        </div>
+                        <div class="flex-1 space-y-3 overflow-y-auto pr-1" id="tasks-progress-col">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Column 3: Blocked -->
+                    <div class="bg-slate-100/70 p-4 rounded-2xl border border-slate-200/50 space-y-4 flex flex-col h-[600px]">
+                        <div class="flex justify-between items-center px-1">
+                            <span class="font-bold text-xs text-slate-700 flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> معلقة / متوقفة</span>
+                            <span class="text-[10px] bg-rose-50 text-rose-600 font-bold px-2 py-0.5 rounded-full" id="count-blocked">0</span>
+                        </div>
+                        <div class="flex-1 space-y-3 overflow-y-auto pr-1" id="tasks-blocked-col">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Column 4: Completed -->
+                    <div class="bg-slate-100/70 p-4 rounded-2xl border border-slate-200/50 space-y-4 flex flex-col h-[600px]">
+                        <div class="flex justify-between items-center px-1">
+                            <span class="font-bold text-xs text-slate-700 flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> مكتملة</span>
+                            <span class="text-[10px] bg-emerald-50 text-emerald-600 font-bold px-2 py-0.5 rounded-full" id="count-completed">0</span>
+                        </div>
+                        <div class="flex-1 space-y-3 overflow-y-auto pr-1" id="tasks-completed-col">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- ================== SCREEN 5: EVENTS ================== -->
+            <section id="screen-events" class="space-y-6 hidden">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h3 class="font-bold text-lg text-slate-800">إدارة المؤتمرات والفعاليات والورش</h3>
+                        <p class="text-xs text-slate-500 mt-1">تخطيط وجدولة وتفاصيل الحضور للفعاليات التنفيذية للعملاء</p>
+                    </div>
+                    <button onclick="openAddEventModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-4 py-2.5 rounded-lg font-bold flex items-center gap-2 shadow-sm transition-all">
+                        <i class="fa-solid fa-plus"></i> إضافة فعالية جديدة
+                    </button>
+                </div>
+
+                <!-- Event Cards Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="events-grid">
+                    <!-- Populated dynamically -->
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- ================== MODALS SECTION ================== -->
+    
+    <!-- 1. Profile / Settings Modal -->
+    <div id="modal-profile" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md overflow-hidden transform transition-all">
+            <div class="bg-slate-900 text-white p-6 relative">
+                <button onclick="closeProfileModal()" class="absolute top-4 left-4 text-slate-400 hover:text-white transition-all text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+                <div class="flex flex-col items-center text-center space-y-3">
+                    <div class="w-20 h-20 bg-indigo-500 rounded-full flex items-center justify-center text-white font-extrabold text-3xl shadow-lg border-2 border-slate-800" id="profile-avatar">
+                        أ
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-lg" id="profile-name">أحمد محمد</h3>
+                        <p class="text-xs text-slate-400 mt-0.5" id="profile-role">مدير العلاقات الخارجية</p>
+                    </div>
+                </div>
+            </div>
+            <div class="p-6 space-y-4">
+                <form id="profile-form" onsubmit="saveProfile(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">الاسم الكامل</label>
+                        <input type="text" id="input-full-name" value="أحمد محمد" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">البريد الإلكتروني</label>
+                        <input type="email" id="input-email" value="ahmed@example.com" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">رقم الهاتف</label>
+                        <input type="text" id="input-phone" value="+966500000000" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div class="border-t border-slate-100 pt-4 flex gap-3">
+                        <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2.5 rounded-lg transition-all">حفظ التغييرات</button>
+                        <button type="button" onclick="triggerPasswordReset()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2.5 rounded-lg transition-all">إعادة تعيين كلمة المرور</button>
+                    </div>
+                </form>
+                <div class="border-t border-slate-100 pt-4">
+                    <button onclick="logout()" class="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold py-2.5 rounded-lg transition-all flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج من النظام
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Add Organization Modal (CRM) -->
+    <div id="modal-org" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden transform transition-all">
+            <div class="bg-indigo-900 text-white p-5 flex justify-between items-center">
+                <h3 class="font-bold text-sm"><i class="fa-solid fa-building text-indigo-300"></i> إضافة مؤسسة / عميل جديد</h3>
+                <button onclick="closeOrgModal()" class="text-slate-400 hover:text-white transition-all"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="org-form" onsubmit="saveNewOrg(event)" class="p-6 space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">اسم المؤسسة</label>
+                        <input type="text" id="add-org-name" required placeholder="مثال: البنك الأهلي" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">قطاع العمل</label>
+                        <input type="text" id="add-org-sector" required placeholder="مثال: مصارف / تقنية" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">تصنيف العميل</label>
+                        <select id="add-org-class" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                            <option value="VIP">VIP</option>
+                            <option value="A">تصنيف A</option>
+                            <option value="B">تصنيف B</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">حالة التفاعل</label>
+                        <select id="add-org-status" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                            <option value="active">نشط</option>
+                            <option value="inactive">غير نشط</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">عدد جهات الاتصال</label>
+                        <input type="number" id="add-org-contacts" required value="1" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">معدل الرضا (%)</label>
+                        <input type="number" id="add-org-satisfaction" min="0" max="100" value="90" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 pt-4 flex gap-3 justify-end">
+                    <button type="button" onclick="closeOrgModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-all">إلغاء</button>
+                    <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm">حفظ المؤسسة</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 3. Add Visit Modal -->
+    <div id="modal-visit" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden transform transition-all">
+            <div class="bg-indigo-900 text-white p-5 flex justify-between items-center">
+                <h3 class="font-bold text-sm"><i class="fa-solid fa-map-location-dot text-amber-300"></i> جدولة زيارة ميدانية جديدة</h3>
+                <button onclick="closeVisitModal()" class="text-slate-400 hover:text-white transition-all"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="visit-form" onsubmit="saveNewVisit(event)" class="p-6 space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">المؤسسة المستهدفة</label>
+                        <select id="add-visit-org" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                            <!-- Populated dynamically with registered organizations -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">نوع اللقاء</label>
+                        <select id="add-visit-type" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                            <option value="زيارة ميدانية">زيارة ميدانية</option>
+                            <option value="اجتماع فني">اجتماع فني</option>
+                            <option value="عرض تجريبي">عرض تجريبي</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">تاريخ الزيارة</label>
+                        <input type="date" id="add-visit-date" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">الوقت والمدى</label>
+                        <input type="text" id="add-visit-time" required placeholder="مثال: 10:00 ص (ساعتان)" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">المدينة / الموقع الجغرافي</label>
+                        <input type="text" id="add-visit-loc" required placeholder="مثال: الرياض، حي المروج" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">احتمالية نجاح الفرصة</label>
+                        <select id="add-visit-prob" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                            <option value="high">مرتفعة جداً (High)</option>
+                            <option value="medium">متوسطة (Medium)</option>
+                            <option value="low">منخفضة (Low)</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1.5">أهداف الزيارة الأساسية</label>
+                    <input type="text" id="add-visit-obj" required placeholder="مثال: تقديم عرض تقني، متابعة عقد" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1.5">ملاحظات ومرئيات إضافية</label>
+                    <textarea id="add-visit-notes" rows="2" placeholder="أدخل أي ملاحظات مسبقة..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                </div>
+                <div class="border-t border-slate-100 pt-4 flex gap-3 justify-end">
+                    <button type="button" onclick="closeVisitModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-all">إلغاء</button>
+                    <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm">حفظ وجدولة</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 4. Add Task Modal -->
+    <div id="modal-task" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md overflow-hidden transform transition-all">
+            <div class="bg-indigo-900 text-white p-5 flex justify-between items-center">
+                <h3 class="font-bold text-sm"><i class="fa-solid fa-list-check text-rose-300"></i> إضافة مهمة جديدة</h3>
+                <button onclick="closeTaskModal()" class="text-slate-400 hover:text-white transition-all"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="task-form" onsubmit="saveNewTask(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1.5">عنوان المهمة</label>
+                    <input type="text" id="add-task-title" required placeholder="عنوان يعبر عن الأنشطة والمتابعات" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">المؤسسة المرتبطة</label>
+                        <select id="add-task-org" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">نوع التكليف</label>
+                        <select id="add-task-type" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                            <option value="اتصال">اتصال هاتفي</option>
+                            <option value="زيارة">زيارة تتبعية</option>
+                            <option value="بريد">بريد إلكتروني</option>
+                            <option value="اجتماع">اجتماع تنسيقي</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">الأولوية</label>
+                        <select id="add-task-priority" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                            <option value="urgent">عاجلة جداً (Urgent)</option>
+                            <option value="normal">عادية (Normal)</option>
+                            <option value="low">منخفضة الأولوية (Low)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">حالة المهمة</label>
+                        <select id="add-task-status" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                            <option value="new">جديدة</option>
+                            <option value="in_progress">قيد التنفيذ</option>
+                            <option value="blocked">معلقة</option>
+                            <option value="completed">مكتملة</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">تاريخ الاستحقاق</label>
+                        <input type="date" id="add-task-date" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">وقت المتابعة</label>
+                        <input type="text" id="add-task-time" required placeholder="مثال: 11:30 ص" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1.5">الوصف والتوجيهات</label>
+                    <textarea id="add-task-desc" rows="3" required placeholder="تفاصيل المهمة المطلوب إنجازها بدقة..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                </div>
+                <div class="border-t border-slate-100 pt-4 flex gap-3 justify-end">
+                    <button type="button" onclick="closeTaskModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-all">إلغاء</button>
+                    <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm">حفظ التكليف</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 5. Add Event Modal -->
+    <div id="modal-event" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden transform transition-all">
+            <div class="bg-indigo-900 text-white p-5 flex justify-between items-center">
+                <h3 class="font-bold text-sm"><i class="fa-solid fa-calendar-days text-sky-300"></i> إضافة فعالية ومؤتمر جديد</h3>
+                <button onclick="closeEventModal()" class="text-slate-400 hover:text-white transition-all"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="event-form" onsubmit="saveNewEvent(event)" class="p-6 space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">اسم الفعالية</label>
+                        <input type="text" id="add-event-name" required placeholder="مثال: ورشة عمل الأنظمة السحابية" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">نوع الفعالية</label>
+                        <select id="add-event-type" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                            <option value="مؤتمر">مؤتمر قطاعي</option>
+                            <option value="ورشة عمل">ورشة عمل تدريبية</option>
+                            <option value="حفل">حفل تدشين وإطلاق</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">المؤسسة الراعية / الشريكة</label>
+                        <select id="add-event-org" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">الموقع وقاعة الاستضافة</label>
+                        <input type="text" id="add-event-loc" required placeholder="مثال: فندق الريتز كارلتون" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">تاريخ الانعقاد</label>
+                        <input type="date" id="add-event-date" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">التوقيت الزمني اليومي</label>
+                        <input type="text" id="add-event-time" required placeholder="مثال: 09:00 ص - 03:00 م" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">إجمالي الحضور المتوقع</label>
+                        <input type="number" id="add-event-count" required value="100" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">القيمة التعاقدية (ر.س)</label>
+                        <input type="text" id="add-event-val" required placeholder="مثال: 95,000" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 pt-4 flex gap-3 justify-end">
+                    <button type="button" onclick="closeEventModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-all">إلغاء</button>
+                    <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm">حفظ وإدراج</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Alert / Toast Component -->
+    <div id="toast" class="hidden fixed bottom-5 left-5 bg-slate-900 text-white px-5 py-3.5 rounded-xl shadow-2xl z-50 flex items-center space-x-3 space-x-reverse text-xs font-bold transition-all transform translate-y-10 opacity-0">
+        <span id="toast-icon-box" class="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center"><i class="fa-solid fa-check"></i></span>
+        <span id="toast-msg">تمت العملية بنجاح!</span>
+    </div>
+
+    <!-- ================== JAVASCRIPT LOGIC ================== -->
+    <script>
+        // INIT DATA STATE (Parsed and structured similarly to original Dart files)
+        let organizations = [
+            { id: 1, name: 'أرامكو السعودية', sector: 'نفط وغاز', classification: 'VIP', status: 'active', contacts: 5, visits: 12, proposals: 8, contracts: 3, satisfaction: 95 },
+            { id: 2, name: 'الاتصالات السعودية STC', sector: 'اتصالات', classification: 'VIP', status: 'active', contacts: 4, visits: 10, proposals: 6, contracts: 2, satisfaction: 92 },
+            { id: 3, name: 'بنك الراجحي', sector: 'مصارف تمويلية', classification: 'A', status: 'active', contacts: 3, visits: 8, proposals: 4, contracts: 1, satisfaction: 89 },
+            { id: 4, name: 'وزارة الموارد البشرية', sector: 'حكومي خدمي', classification: 'B', status: 'inactive', contacts: 2, visits: 3, proposals: 2, contracts: 0, satisfaction: 75 }
+        ];
+
+        let visits = [
+            { id: 1, orgId: 1, orgName: 'أرامكو السعودية', date: '2026-07-01', time: '10:00 ص', duration: '2 ساعة', location: 'الظهران، المبنى الرئيسي', type: 'زيارة ميدانية', status: 'completed', probability: 'high', team: ['أحمد', 'خالد'], objectives: 'تقديم عرض النظم السحابية والمتابعة العامة للملف', notes: 'العميل مهتم جداً وسنقوم بإرسال نسخة العقد المعدل قريباً.' },
+            { id: 2, orgId: 2, orgName: 'الاتصالات السعودية STC', date: '2026-07-03', time: '14:00 م', duration: '1.5 ساعة', location: 'الرياض، مجمع الاتصالات', type: 'اجتماع فني', status: 'completed', probability: 'high', team: ['أحمد'], objectives: 'مراجعة الملحق المالي ومتابعة العقد التقني', notes: 'تمت معالجة الفروقات والطرفين جاهزون للبدء بالاعتماد النهائي.' },
+            { id: 3, orgId: 3, orgName: 'بنك الراجحي', date: '2026-07-06', time: '11:00 ص', duration: '3 ساعات', location: 'الرياض، الإدارة العامة', type: 'عرض تجريبي', status: 'in_progress', probability: 'medium', team: ['أحمد', 'عبدالله'], objectives: 'تجربة محاكاة الأنظمة وتحليل الفروقات المالية', notes: 'الاستعداد وتأمين التوصيلات اللازمة للعرض.' }
+        ];
+
+        let tasks = [
+            { id: 1, title: 'متابعة مع شركة النفط أرامكو', type: 'اتصال', priority: 'urgent', status: 'new', dueDate: '2026-07-05', dueTime: '10:00 ص', orgName: 'أرامكو السعودية', assignedTo: 'أحمد', description: 'متابعة عرض السعر المقدم وتحديد موعد الاجتماع لتوقيع المذكرة.' },
+            { id: 2, title: 'زيارة ميدانية - بنك الراجحي', type: 'زيارة', priority: 'normal', status: 'in_progress', dueDate: '2026-07-06', dueTime: '11:00 ص', orgName: 'بنك الراجحي', assignedTo: 'أحمد', description: 'تقييم جودة الخدمة الحالية ومناقشة التجديد السنوي لخدمات الحوسبة.' },
+            { id: 3, title: 'إرسال العقد الفني المعتمد STC', type: 'بريد', priority: 'urgent', status: 'completed', dueDate: '2026-07-02', dueTime: '16:00 م', orgName: 'الاتصالات السعودية STC', assignedTo: 'أحمد', description: 'تدقيق الملاحظات القانونية وإرسال النسخة النهائية الموقعة.' },
+            { id: 4, title: 'متابعة رضا وزارة الموارد', type: 'اتصال', priority: 'low', status: 'blocked', dueDate: '2026-07-10', dueTime: '09:00 ص', orgName: 'وزارة الموارد البشرية', assignedTo: 'أحمد', description: 'حل معضلة تكرار الانقطاعات الأخيرة ورفع التقرير لإدارة العمليات.' }
+        ];
+
+        let events = [
+            { id: 1, name: 'مؤتمر التقنية والرقمنة 2026', type: 'مؤتمر', date: '2026-07-15', time: '09:00 ص - 17:00 م', location: 'مركز الملك فهد الثقافي', orgName: 'الاتصالات السعودية STC', personCount: 500, status: 'confirmed', value: '125,000 ر.س' },
+            { id: 2, name: 'حفل تدشين منتج الربط السحابي', type: 'حفل', date: '2026-07-20', time: '19:00 م - 23:00 م', location: 'فندق الفيصلية بالرياض', orgName: 'أرامكو السعودية', personCount: 200, status: 'planned', value: '85,000 ر.س' },
+            { id: 3, name: 'ورشة عمل وتوعية للتحول الآمن', type: 'ورشة عمل', date: '2026-08-01', time: '09:00 ص - 13:00 م', location: 'المقر الرئيسي لبنك الراجحي', orgName: 'بنك الراجحي', personCount: 50, status: 'confirmed', value: '30,000 ر.س' }
+        ];
+
+        // CHART VARIABLES
+        let salesChartObj = null;
+        let distChartObj = null;
+
+        // ONLOAD INITIALIZATION
+        window.onload = function() {
+            // Load state if exists locally
+            if(localStorage.getItem('crm_orgs')) {
+                organizations = JSON.parse(localStorage.getItem('crm_orgs'));
+                visits = JSON.parse(localStorage.getItem('crm_visits'));
+                tasks = JSON.parse(localStorage.getItem('crm_tasks'));
+                events = JSON.parse(localStorage.getItem('crm_events'));
+            }
+
+            // Populate everything
+            switchTab('dashboard');
+            renderDashboardData();
+            populateOrgSelectOptions();
+            initCharts();
+        };
+
+        // SAVE TO LOCAL STORAGE
+        function syncLocalStorage() {
+            localStorage.setItem('crm_orgs', JSON.stringify(organizations));
+            localStorage.setItem('crm_visits', JSON.stringify(visits));
+            localStorage.setItem('crm_tasks', JSON.stringify(tasks));
+            localStorage.setItem('crm_events', JSON.stringify(events));
+            populateOrgSelectOptions();
+        }
+
+        // TAB NAVIGATION
+        function switchTab(tabName) {
+            // Hide all screens
+            document.querySelectorAll('main > div > section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            // Show requested screen
+            document.getElementById(`screen-${tabName}`).classList.remove('hidden');
+
+            // Deactivate all desktop sidebar buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-slate-800', 'text-white', 'border-r-4', 'border-indigo-500');
+                btn.classList.add('text-slate-300');
+            });
+
+            // Activate current desktop button
+            const activeBtn = document.getElementById(`btn-${tabName}`);
+            if(activeBtn) {
+                activeBtn.classList.add('bg-slate-800', 'text-white', 'border-r-4', 'border-indigo-500');
+                activeBtn.classList.remove('text-slate-300');
+            }
+
+            // Deactivate all mobile bottom navigation buttons
+            document.querySelectorAll('.mob-nav-btn').forEach(btn => {
+                btn.classList.remove('text-indigo-400');
+                btn.classList.add('text-slate-400');
+            });
+
+            // Activate current mobile button
+            const activeMobBtn = document.getElementById(`mob-btn-${tabName}`);
+            if(activeMobBtn) {
+                activeMobBtn.classList.add('text-indigo-400');
+                activeMobBtn.classList.remove('text-slate-400');
+            }
+
+            // Update Page title
+            const titles = {
+                'dashboard': 'لوحة التحكم التنفيذية',
+                'crm': 'إدارة علاقات العملاء (CRM)',
+                'visits': 'الزيارات الميدانية والمواصفات',
+                'tasks': 'المهام والأنشطة والجدولة',
+                'events': 'الفعاليات والمؤتمرات الكبرى'
+            };
+            document.getElementById('page-title').innerText = titles[tabName] || 'نظام الإدارة';
+
+            // Custom rendering triggers based on active tab
+            if (tabName === 'dashboard') {
+                renderDashboardData();
+            } else if (tabName === 'crm') {
+                renderCRM();
+            } else if (tabName === 'visits') {
+                renderVisits();
+            } else if (tabName === 'tasks') {
+                renderTasks();
+            } else if (tabName === 'events') {
+                renderEvents();
+            }
+        }
+
+        // NOTIFICATIONS DROP DOWN TOGGLE
+        function toggleNotifications() {
+            const list = document.getElementById('notifications-dropdown');
+            list.classList.toggle('hidden');
+        }
+
+        // TOAST ALERT TRIGGER
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toast-msg');
+            const iconBox = document.getElementById('toast-icon-box');
+
+            msgEl.innerText = message;
+            if (type === 'success') {
+                iconBox.className = "w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center";
+                iconBox.innerHTML = '<i class="fa-solid fa-check"></i>';
+            } else {
+                iconBox.className = "w-6 h-6 rounded-full bg-rose-500 text-white flex items-center justify-center";
+                iconBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+            }
+
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.remove('opacity-0', 'translate-y-10');
+            }, 50);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-10');
+                setTimeout(() => { toast.classList.add('hidden'); }, 300);
+            }, 3000);
+        }
+
+        // PERIOD CONTROL (DASHBOARD KPI FILTER)
+        function changePeriod(index, btn) {
+            document.querySelectorAll('.period-btn').forEach(b => {
+                b.classList.remove('bg-white', 'text-slate-800', 'shadow-sm');
+                b.classList.add('text-slate-600', 'hover:text-slate-800');
+            });
+            btn.classList.add('bg-white', 'text-slate-800', 'shadow-sm');
+            btn.classList.remove('text-slate-600', 'hover:text-slate-800');
+
+            // Simulate changing KPI figures slightly for depth realism
+            const multipliers = [1, 1.4, 4.5, 12];
+            const mul = multipliers[index];
+
+            document.getElementById('kpi-customers').innerText = Math.round(organizations.length * (index === 0 ? 1 : 1.1));
+            document.getElementById('kpi-visits').innerText = Math.round(visits.length * mul);
+            document.getElementById('kpi-events').innerText = Math.round(events.length * (index === 0 ? 1 : 2));
+            
+            let revenue = 380000;
+            if(index === 0) revenue = 25000;
+            if(index === 1) revenue = 95000;
+            if(index === 2) revenue = 380000;
+            if(index === 3) revenue = 1450000;
+            document.getElementById('kpi-revenue').innerText = revenue.toLocaleString('ar-SA') + ' ر.س';
+
+            showToast("تم تحديث الفرز الزمني للمؤشرات", "success");
+        }
+
+        // INITIALIZE CHARTS
+        function initCharts() {
+            // Line Chart
+            const ctxSales = document.getElementById('salesChart').getContext('2d');
+            salesChartObj = new Chart(ctxSales, {
+                type: 'line',
+                data: {
+                    labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو'],
+                    datasets: [{
+                        label: 'قيمة العقود (بالآلاف)',
+                        data: [65, 80, 125, 95, 140, 175, 210],
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.08)',
+                        tension: 0.4,
+                        fill: true,
+                        borderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: '#f1f5f9' }, ticks: { font: { family: 'Cairo' } } },
+                        x: { grid: { display: false }, ticks: { font: { family: 'Cairo' } } }
+                    }
+                }
+            });
+
+            // Pie/Doughnut Chart
+            const ctxDist = document.getElementById('clientDistributionChart').getContext('2d');
+            distChartObj = new Chart(ctxDist, {
+                type: 'doughnut',
+                data: {
+                    labels: ['VIP كبار العملاء', 'تصنيف أ', 'تصنيف ب'],
+                    datasets: [{
+                        data: [2, 1, 1],
+                        backgroundColor: ['#6366f1', '#10b981', '#f59e0b'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { font: { family: 'Cairo', size: 11 }, boxWidth: 12 }
+                        }
+                    }
+                }
+            });
+        }
+
+        // RE-CALCULATE AND RENDER DASHBOARD CONTENTS
+        function renderDashboardData() {
+            document.getElementById('kpi-customers').innerText = organizations.length;
+            document.getElementById('kpi-visits').innerText = visits.length;
+            document.getElementById('kpi-events').innerText = events.length;
+
+            // Compute total event/deal revenue
+            let totalVal = 0;
+            events.forEach(e => {
+                let cleanVal = parseFloat(e.value.replace(/[^0-9]/g, ''));
+                if(!isNaN(cleanVal)) totalVal += cleanVal;
+            });
+            document.getElementById('kpi-revenue').innerText = totalVal.toLocaleString('ar-SA') + ' ر.س';
+
+            // Render Recent Visits list (Dashboard widget)
+            const recentVisList = document.getElementById('recent-visits-list');
+            recentVisList.innerHTML = '';
+            
+            const activeVisits = visits.slice(-2); // last 2 visits
+            activeVisits.forEach(vis => {
+                recentVisList.innerHTML += `
+                    <div class="flex items-center justify-between p-3.5 bg-slate-50 rounded-xl hover:bg-slate-100/80 transition-all border border-slate-100">
+                        <div class="flex items-center space-x-3 space-x-reverse min-w-0">
+                            <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm shrink-0">
+                                <i class="fa-solid fa-location-dot"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <h5 class="font-bold text-xs text-slate-800 truncate">${vis.orgName}</h5>
+                                <p class="text-[10px] text-slate-500 truncate mt-1">${vis.objectives} (${vis.location})</p>
+                            </div>
+                        </div>
+                        <span class="text-[10px] font-bold px-2.5 py-1 rounded-full ${vis.status === 'completed' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}">${vis.status === 'completed' ? 'مكتملة' : 'قيد المتابعة'}</span>
+                    </div>
+                `;
+            });
+
+            // Render Pending/Urgent Tasks
+            const recentTasksList = document.getElementById('recent-tasks-list');
+            recentTasksList.innerHTML = '';
+            const priorityTasks = tasks.filter(t => t.status !== 'completed').slice(0, 2);
+            priorityTasks.forEach(task => {
+                recentTasksList.innerHTML += `
+                    <div class="flex items-center justify-between p-3.5 bg-slate-50 rounded-xl hover:bg-slate-100/80 transition-all border border-slate-100">
+                        <div class="flex items-center space-x-3 space-x-reverse min-w-0">
+                            <div class="w-10 h-10 rounded-lg ${task.priority === 'urgent' ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600'} flex items-center justify-center text-sm shrink-0">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <h5 class="font-bold text-xs text-slate-800 truncate">${task.title}</h5>
+                                <p class="text-[10px] text-slate-500 truncate mt-1">العميل: ${task.orgName} | المستحق: ${task.dueDate}</p>
+                            </div>
+                        </div>
+                        <span class="text-[10px] text-slate-500 font-bold">${task.dueTime}</span>
+                    </div>
+                `;
+            });
+
+            // Update Chart Data Dynamically if initialized
+            if (distChartObj) {
+                const vipCount = organizations.filter(o => o.classification === 'VIP').length;
+                const aCount = organizations.filter(o => o.classification === 'A').length;
+                const bCount = organizations.filter(o => o.classification === 'B').length;
+                distChartObj.data.datasets[0].data = [vipCount, aCount, bCount];
+                distChartObj.update();
+            }
+        }
+
+        // ================== CRM ACTIONS & RENDER ==================
+        function renderCRM() {
+            const grid = document.getElementById('crm-grid');
+            grid.innerHTML = '';
+
+            organizations.forEach(org => {
+                const statusBadge = org.status === 'active' 
+                    ? '<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> نشط</span>'
+                    : '<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600"><span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span> غير نشط</span>';
+
+                const classColor = org.classification === 'VIP' ? 'bg-indigo-50 text-indigo-700 border-indigo-100' : org.classification === 'A' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-100';
+
+                grid.innerHTML += `
+                    <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4 hover:shadow-md transition-all">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h4 class="font-bold text-sm text-slate-800">${org.name}</h4>
+                                <p class="text-xs text-slate-400 mt-1"><i class="fa-solid fa-tags text-[10px]"></i> قطاع ${org.sector}</p>
+                            </div>
+                            <span class="text-[10px] font-extrabold px-2.5 py-1 rounded border ${classColor}">${org.classification}</span>
+                        </div>
+                        
+                        <div class="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-xl text-center">
+                            <div>
+                                <span class="text-[10px] text-slate-400 block font-medium">جهات الاتصال</span>
+                                <span class="text-xs font-bold text-slate-700 block mt-1">${org.contacts} جهات</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-slate-400 block font-medium">الزيارات</span>
+                                <span class="text-xs font-bold text-slate-700 block mt-1">${org.visits} زيارة</span>
+                            </div>
+                            <div>
+                                <span class="text-[10px] text-slate-400 block font-medium">العقود</span>
+                                <span class="text-xs font-bold text-slate-700 block mt-1">${org.contracts} عقد</span>
+                            </div>
+                        </div>
+
+                        <!-- Progress Bar (Satisfaction Rate) -->
+                        <div>
+                            <div class="flex justify-between text-[10px] font-bold text-slate-500 mb-1">
+                                <span>معدل الرضا والولاء</span>
+                                <span>${org.satisfaction}%</span>
+                            </div>
+                            <div class="w-full bg-slate-100 rounded-full h-2">
+                                <div class="bg-indigo-600 h-2 rounded-full" style="width: ${org.satisfaction}%"></div>
+                            </div>
+                        </div>
+
+                        <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+                            ${statusBadge}
+                            <button onclick="deleteOrganization(${org.id})" class="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded transition-all text-xs" title="حذف المؤسسة">
+                                <i class="fa-regular fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function filterCRM() {
+            const query = document.getElementById('search-crm').value.toLowerCase();
+            const classFilter = document.getElementById('filter-crm-class').value;
+            const statusFilter = document.getElementById('filter-crm-status').value;
+
+            const cards = document.querySelectorAll('#crm-grid > div');
+            
+            organizations.forEach((org, idx) => {
+                const card = cards[idx];
+                if (!card) return;
+
+                const matchQuery = org.name.toLowerCase().includes(query) || org.sector.toLowerCase().includes(query);
+                const matchClass = classFilter === 'الكل' || org.classification === classFilter;
+                const matchStatus = statusFilter === 'الكل' || org.status === statusFilter;
+
+                if (matchQuery && matchClass && matchStatus) {
+                    card.classList.remove('hidden');
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+        }
+
+        function openAddOrgModal() {
+            document.getElementById('modal-org').classList.remove('hidden');
+        }
+        function closeOrgModal() {
+            document.getElementById('modal-org').classList.add('hidden');
+            document.getElementById('org-form').reset();
+        }
+
+        function saveNewOrg(e) {
+            e.preventDefault();
+            const name = document.getElementById('add-org-name').value;
+            const sector = document.getElementById('add-org-sector').value;
+            const classification = document.getElementById('add-org-class').value;
+            const status = document.getElementById('add-org-status').value;
+            const contacts = parseInt(document.getElementById('add-org-contacts').value);
+            const satisfaction = parseInt(document.getElementById('add-org-satisfaction').value);
+
+            const newOrg = {
+                id: Date.now(),
+                name, sector, classification, status, contacts, satisfaction,
+                visits: 0, proposals: 0, contracts: 0
+            };
+
+            organizations.push(newOrg);
+            syncLocalStorage();
+            renderCRM();
+            closeOrgModal();
+            showToast("تمت إضافة المؤسسة الجديدة بنجاح", "success");
+        }
+
+        function deleteOrganization(id) {
+            if (confirm("هل أنت متأكد من حذف هذه المؤسسة؟ سيؤثر ذلك على البيانات المرتبطة.")) {
+                organizations = organizations.filter(o => o.id !== id);
+                syncLocalStorage();
+                renderCRM();
+                showToast("تم حذف المؤسسة بنجاح", "success");
+            }
+        }
+
+        // ================== VISITS ACTIONS & RENDER ==================
+        function renderVisits(filtered = visits) {
+            const list = document.getElementById('visits-list');
+            list.innerHTML = '';
+
+            filtered.forEach(vis => {
+                const probBadge = vis.probability === 'high' 
+                    ? '<span class="bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded text-[10px] font-bold"><i class="fa-solid fa-arrow-trend-up"></i> نجاح مرتفع</span>'
+                    : '<span class="bg-amber-50 text-amber-700 px-2.5 py-0.5 rounded text-[10px] font-bold"><i class="fa-solid fa-arrow-trend-down"></i> متوسط</span>';
+
+                const statusColor = vis.status === 'completed' ? 'bg-indigo-50 border-indigo-200' : 'bg-amber-50 border-amber-200';
+
+                list.innerHTML += `
+                    <div onclick="focusVisitOnMap('${vis.orgName}', '${vis.location}', '${vis.date}', '${vis.status}')" class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md transition-all cursor-pointer space-y-3">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-bold">${vis.type}</span>
+                                <h4 class="font-bold text-sm text-slate-800 mt-1.5">${vis.orgName}</h4>
+                            </div>
+                            ${probBadge}
+                        </div>
+                        
+                        <div class="text-xs text-slate-500 space-y-1">
+                            <p><i class="fa-regular fa-calendar text-[10px] w-4 text-indigo-500"></i> التاريخ: ${vis.date} | ${vis.time}</p>
+                            <p><i class="fa-solid fa-location-dot text-[10px] w-4 text-indigo-500"></i> الموقع: ${vis.location}</p>
+                            <p><i class="fa-solid fa-bullseye text-[10px] w-4 text-indigo-500"></i> الأهداف: ${vis.objectives}</p>
+                        </div>
+
+                        <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                            <span class="text-slate-500"><i class="fa-regular fa-user"></i> الفريق: ${vis.team.join(' و ')}</span>
+                            <span class="text-[10px] font-bold ${vis.status === 'completed' ? 'text-emerald-600' : 'text-amber-600'}">
+                                <i class="fa-solid fa-circle text-[8px]"></i> ${vis.status === 'completed' ? 'زيارة منجزة' : 'قيد التنسيق'}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function filterVisits(type, btn) {
+            document.querySelectorAll('.visits-filter-btn').forEach(b => {
+                b.className = "visits-filter-btn px-4 py-1.5 rounded-full text-xs font-semibold bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 transition-all";
+            });
+            btn.className = "visits-filter-btn px-4 py-1.5 rounded-full text-xs font-semibold bg-indigo-600 text-white shadow-sm transition-all";
+
+            if (type === 'الكل') {
+                renderVisits(visits);
+            } else if (type === 'completed') {
+                renderVisits(visits.filter(v => v.status === 'completed'));
+            } else if (type === 'in_progress') {
+                renderVisits(visits.filter(v => v.status === 'in_progress'));
+            } else if (type === 'high_prob') {
+                renderVisits(visits.filter(v => v.probability === 'high'));
+            }
+        }
+
+        function focusVisitOnMap(orgName, location, date, status) {
+            document.getElementById('map-target-org').innerText = orgName;
+            document.getElementById('map-target-details').innerText = `الموقع المستهدف: ${location}. تاريخ الجدولة: ${date}`;
+            document.getElementById('map-target-status').innerHTML = status === 'completed' 
+                ? '<i class="fa-solid fa-circle text-emerald-500 text-[10px]"></i> تمت الزيارة وتوثيقها'
+                : '<i class="fa-solid fa-circle text-amber-500 text-[10px]"></i> بانتظار التأكيد والذهاب';
+            
+            showToast(`تم عرض موقع ${orgName} على الخريطة الافتراضية`, "success");
+        }
+
+        // Auto Scroll to view top when Map focused on mobile
+        if (window.innerWidth < 768) {
+            document.getElementById('map-canvas').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function openAddVisitModal() {
+            document.getElementById('modal-visit').classList.remove('hidden');
+        }
+        function closeVisitModal() {
+            document.getElementById('modal-visit').classList.add('hidden');
+            document.getElementById('visit-form').reset();
+        }
+
+        function saveNewVisit(e) {
+            e.preventDefault();
+            const orgId = parseInt(document.getElementById('add-visit-org').value);
+            const org = organizations.find(o => o.id === orgId);
+            const type = document.getElementById('add-visit-type').value;
+            const date = document.getElementById('add-visit-date').value;
+            const time = document.getElementById('add-visit-time').value;
+            const location = document.getElementById('add-visit-loc').value;
+            const probability = document.getElementById('add-visit-prob').value;
+            const objectives = document.getElementById('add-visit-obj').value;
+            const notes = document.getElementById('add-visit-notes').value;
+
+            const newVis = {
+                id: Date.now(),
+                orgId,
+                orgName: org ? org.name : 'مؤسسة غير معروفة',
+                date, time, duration: 'ساعة ونصف', location, type,
+                status: 'in_progress', probability, team: ['أحمد'], objectives, notes
+            };
+
+            visits.push(newVis);
+            // Increment org visit count
+            if (org) org.visits += 1;
+
+            syncLocalStorage();
+            renderVisits();
+            closeVisitModal();
+            showToast("تم جدولة وإضافة الزيارة الميدانية", "success");
+        }
+
+        // ================== TASKS ACTIONS & RENDER ==================
+        function renderTasks() {
+            const cols = {
+                'new': document.getElementById('tasks-new-col'),
+                'in_progress': document.getElementById('tasks-progress-col'),
+                'blocked': document.getElementById('tasks-blocked-col'),
+                'completed': document.getElementById('tasks-completed-col')
+            };
+
+            // Clear columns
+            Object.values(cols).forEach(col => col.innerHTML = '');
+
+            // Group tasks and count
+            let counts = { 'new': 0, 'in_progress': 0, 'blocked': 0, 'completed': 0 };
+
+            tasks.forEach(task => {
+                const priorityColor = task.priority === 'urgent' ? 'text-rose-600 bg-rose-50 border-rose-100' : 'text-amber-600 bg-amber-50 border-amber-100';
+                const priorityText = task.priority === 'urgent' ? 'عاجل' : 'عادي';
+
+                const taskHtml = `
+                    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm space-y-3 relative group hover:border-slate-300 transition-all">
+                        <div class="flex justify-between items-start">
+                            <span class="text-[9px] font-extrabold px-2 py-0.5 rounded border ${priorityColor}">${priorityText}</span>
+                            <span class="text-[10px] text-slate-400 font-bold">${task.dueTime}</span>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-xs text-slate-800 leading-snug">${task.title}</h4>
+                            <p class="text-[10px] text-slate-500 mt-1"><i class="fa-solid fa-building text-[8px]"></i> العميل: ${task.orgName}</p>
+                            <p class="text-[10px] text-slate-400 mt-2 line-clamp-2">${task.description}</p>
+                        </div>
+                        
+                        <div class="pt-2.5 border-t border-slate-100 flex items-center justify-between text-[10px]">
+                            <span class="text-slate-500 font-medium"><i class="fa-regular fa-clock"></i> استحقاق: ${task.dueDate}</span>
+                            <div class="flex gap-1">
+                                ${task.status !== 'completed' ? `<button onclick="updateTaskStatus(${task.id}, 'completed')" class="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 p-1 rounded transition-all" title="اكتمال المهمة"><i class="fa-solid fa-check"></i></button>` : ''}
+                                ${task.status === 'new' ? `<button onclick="updateTaskStatus(${task.id}, 'in_progress')" class="bg-amber-50 text-amber-600 hover:bg-amber-100 p-1 rounded transition-all" title="بدء التنفيذ"><i class="fa-solid fa-play"></i></button>` : ''}
+                                <button onclick="deleteTask(${task.id})" class="text-rose-400 hover:text-rose-600 hover:bg-rose-50 p-1 rounded transition-all" title="حذف التكليف"><i class="fa-regular fa-trash-can"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                if (cols[task.status]) {
+                    cols[task.status].innerHTML += taskHtml;
+                    counts[task.status]++;
+                }
+            });
+
+            // Update badges counts
+            document.getElementById('count-new').innerText = counts['new'];
+            document.getElementById('count-progress').innerText = counts['in_progress'];
+            document.getElementById('count-blocked').innerText = counts['blocked'];
+            document.getElementById('count-completed').innerText = counts['completed'];
+        }
+
+        function updateTaskStatus(id, newStatus) {
+            const task = tasks.find(t => t.id === id);
+            if (task) {
+                task.status = newStatus;
+                syncLocalStorage();
+                renderTasks();
+                showToast("تم تحديث حالة المهمة الموكلة", "success");
+            }
+        }
+
+        function openAddTaskModal() {
+            document.getElementById('modal-task').classList.remove('hidden');
+        }
+        function closeTaskModal() {
+            document.getElementById('modal-task').classList.add('hidden');
+            document.getElementById('task-form').reset();
+        }
+
+        function saveNewTask(e) {
+            e.preventDefault();
+            const title = document.getElementById('add-task-title').value;
+            const orgName = document.getElementById('add-task-org').value;
+            const type = document.getElementById('add-task-type').value;
+            const priority = document.getElementById('add-task-priority').value;
+            const status = document.getElementById('add-task-status').value;
+            const dueDate = document.getElementById('add-task-date').value;
+            const dueTime = document.getElementById('add-task-time').value;
+            const description = document.getElementById('add-task-desc').value;
+
+            const newTask = {
+                id: Date.now(),
+                title, type, priority, status, dueDate, dueTime, orgName,
+                assignedTo: 'أحمد', description
+            };
+
+            tasks.push(newTask);
+            syncLocalStorage();
+            renderTasks();
+            closeTaskModal();
+            showToast("تم إدراج المهمة الجديدة بنجاح", "success");
+        }
+
+        function deleteTask(id) {
+            if (confirm("هل تريد حذف هذا التكليف بالكامل؟")) {
+                tasks = tasks.filter(t => t.id !== id);
+                syncLocalStorage();
+                renderTasks();
+                showToast("تم إزالة المهمة بنجاح", "success");
+            }
+        }
+
+        // ================== EVENTS ACTIONS & RENDER ==================
+        function renderEvents() {
+            const grid = document.getElementById('events-grid');
+            grid.innerHTML = '';
+
+            events.forEach(ev => {
+                const statusColor = ev.status === 'confirmed' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-amber-50 text-amber-700 border-amber-100';
+                const statusLabel = ev.status === 'confirmed' ? 'مؤكد' : 'مخطط';
+
+                grid.innerHTML += `
+                    <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4 hover:shadow-md transition-all">
+                        <div class="flex justify-between items-start">
+                            <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-1 rounded font-bold">${ev.type}</span>
+                            <span class="text-[10px] font-extrabold px-2.5 py-1 rounded border ${statusColor}">${statusLabel}</span>
+                        </div>
+
+                        <div>
+                            <h4 class="font-bold text-sm text-slate-800">${ev.name}</h4>
+                            <p class="text-xs text-indigo-600 font-semibold mt-1"><i class="fa-regular fa-building text-[10px]"></i> الراعي: ${ev.orgName}</p>
+                        </div>
+
+                        <div class="text-xs text-slate-500 space-y-2 bg-slate-50 p-3 rounded-xl">
+                            <p><i class="fa-regular fa-calendar text-[10px] w-4 text-indigo-500"></i> التاريخ: ${ev.date}</p>
+                            <p><i class="fa-regular fa-clock text-[10px] w-4 text-indigo-500"></i> الوقت: ${ev.time}</p>
+                            <p><i class="fa-solid fa-map-location-dot text-[10px] w-4 text-indigo-500"></i> الموقع: ${ev.location}</p>
+                            <p><i class="fa-solid fa-users text-[10px] w-4 text-indigo-500"></i> الحضور المتوقع: ${ev.personCount} شخص</p>
+                        </div>
+
+                        <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+                            <div>
+                                <span class="text-[10px] text-slate-400 block font-medium">القيمة التعاقدية</span>
+                                <span class="text-xs font-bold text-slate-700 block mt-0.5">${ev.value}</span>
+                            </div>
+                            <button onclick="deleteEvent(${ev.id})" class="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded transition-all text-xs" title="حذف الفعالية">
+                                <i class="fa-regular fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function openAddEventModal() {
+            document.getElementById('modal-event').classList.remove('hidden');
+        }
+        function closeEventModal() {
+            document.getElementById('modal-event').classList.add('hidden');
+            document.getElementById('event-form').reset();
+        }
+
+        function saveNewEvent(e) {
+            e.preventDefault();
+            const name = document.getElementById('add-event-name').value;
+            const type = document.getElementById('add-event-type').value;
+            const orgName = document.getElementById('add-event-org').value;
+            const location = document.getElementById('add-event-loc').value;
+            const date = document.getElementById('add-event-date').value;
+            const time = document.getElementById('add-event-time').value;
+            const personCount = parseInt(document.getElementById('add-event-count').value);
+            const value = document.getElementById('add-event-val').value + ' ر.س';
+
+            const newEvent = {
+                id: Date.now(),
+                name, type, orgName, location, date, time, personCount,
+                status: 'confirmed', value
+            };
+
+            events.push(newEvent);
+            syncLocalStorage();
+            renderEvents();
+            closeEventModal();
+            showToast("تم إدراج وتوثيق الفعالية بنجاح", "success");
+        }
+
+        function deleteEvent(id) {
+            if (confirm("هل تريد إزالة هذه الفعالية نهائياً؟")) {
+                events = events.filter(e => e.id !== id);
+                syncLocalStorage();
+                renderEvents();
+                showToast("تم إزالة الفعالية بنجاح", "success");
+            }
+        }
+
+        // ================== HELPER: OPTIONS AUTO-POPULATION ==================
+        function populateOrgSelectOptions() {
+            const addVisitOrgSel = document.getElementById('add-visit-org');
+            const addTaskOrgSel = document.getElementById('add-task-org');
+            const addEventOrgSel = document.getElementById('add-event-org');
+
+            // Clear
+            addVisitOrgSel.innerHTML = '';
+            addTaskOrgSel.innerHTML = '';
+            addEventOrgSel.innerHTML = '';
+
+            organizations.forEach(org => {
+                addVisitOrgSel.innerHTML += `<option value="${org.id}">${org.name}</option>`;
+                addTaskOrgSel.innerHTML += `<option value="${org.name}">${org.name}</option>`;
+                addEventOrgSel.innerHTML += `<option value="${org.name}">${org.name}</option>`;
+            });
+        }
+
+        // ================== USER ACCOUNT PROFILE MODAL ACTIONS ==================
+        function openProfileModal() {
+            document.getElementById('modal-profile').classList.remove('hidden');
+        }
+        function closeProfileModal() {
+            document.getElementById('modal-profile').classList.add('hidden');
+        }
+
+        function saveProfile(e) {
+            e.preventDefault();
+            const fullName = document.getElementById('input-full-name').value;
+            const email = document.getElementById('input-email').value;
+            
+            // Update UI representations
+            document.getElementById('user-name-display').innerText = fullName;
+            document.getElementById('user-header-name').innerText = fullName;
+            document.getElementById('profile-name').innerText = fullName;
+            document.getElementById('profile-avatar').innerText = fullName.trim().charAt(0);
+
+            closeProfileModal();
+            showToast("تم تحديث بيانات الملف الشخصي بنجاح", "success");
+        }
+
+        // Trigger password reset simulation
+        function triggerPasswordReset() {
+            const email = document.getElementById('input-email').value;
+            showToast(`تم إرسال رابط إعادة تعيين كلمة المرور إلى: ${email}`, "success");
+        }
+
+        function logout() {
+            if(confirm("هل تريد تسجيل الخروج والعودة لصفحة المصادقة؟")) {
+                showToast("تم تسجيل الخروج بنجاح", "success");
+                setTimeout(() => {
+                    location.reload(); // Reset state
+                }, 1000);
+            }
+        }
+    </script>
+</body>
+</html>
