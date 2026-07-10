@@ -322,6 +322,26 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- RECENT VISITS & TASKS -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200">
+                        <h4 class="font-bold text-xs text-slate-800 mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-map-location-dot text-indigo-500"></i> أحدث الزيارات الميدانية
+                        </h4>
+                        <div class="space-y-2" id="recent-visits-list">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200">
+                        <h4 class="font-bold text-xs text-slate-800 mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-list-check text-indigo-500"></i> أحدث المهام والتكليفات
+                        </h4>
+                        <div class="space-y-2" id="recent-tasks-list">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
             </section>
 
 
@@ -1346,6 +1366,286 @@
     <!-- (We already have modal-org-detail with tabs, it is used for detail review) -->
 
     <!-- ================== JAVASCRIPT LOGIC ================== -->
+
+    <!-- 6. Add Visit Modal -->
+    <div id="modal-visit" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all h-[85vh] flex flex-col">
+            <div class="bg-indigo-950 text-white p-5 flex justify-between items-center shrink-0">
+                <h3 class="font-bold text-sm"><i class="fa-solid fa-map-location-dot text-indigo-300"></i> جدولة زيارة ميدانية جديدة</h3>
+                <button onclick="closeAddVisitModal()" class="text-slate-400 hover:text-white transition-all"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="visit-form" onsubmit="saveNewVisit(event)" class="flex-1 overflow-y-auto p-6 space-y-4 text-xs">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1.5">المؤسسة المستهدفة</label>
+                        <select id="add-visit-org" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"></select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1.5">نوع الزيارة</label>
+                        <select id="add-visit-type" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                            <option value="زيارة ميدانية أولى">زيارة ميدانية أولى</option>
+                            <option value="زيارة ميدانية وتدقيق فني">زيارة ميدانية وتدقيق فني</option>
+                            <option value="زيارة متابعة">زيارة متابعة</option>
+                            <option value="زيارة تقييم">زيارة تقييم</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1.5">تاريخ الزيارة</label>
+                        <input type="date" id="add-visit-date" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1.5">وقت الزيارة</label>
+                        <input type="text" id="add-visit-time" placeholder="مثال: 10:00 ص" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1.5">مدة الزيارة</label>
+                        <input type="text" id="add-visit-duration" placeholder="مثال: ساعة واحدة" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1.5">مكان الزيارة</label>
+                        <input type="text" id="add-visit-location" required placeholder="المدينة، الحي، المبنى" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1.5">اسم الشخص المسؤول</label>
+                        <input type="text" id="add-visit-contact-name" placeholder="أ. فلان الفلاني" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1.5">المنصب الوظيفي</label>
+                        <input type="text" id="add-visit-contact-role" placeholder="مدير المشتريات" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1.5">رقم التواصل</label>
+                        <input type="text" id="add-visit-contact-phone" placeholder="05XXXXXXXX" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1.5">فريق الزيارة</label>
+                        <input type="text" id="add-visit-team" placeholder="أحمد محمد، فيصل الحربي" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1.5">نوع الاحتياج</label>
+                        <select id="add-visit-need" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                            <option value="بوكسات وجبات">بوكسات وجبات</option>
+                            <option value="ضيافة اجتماعات">ضيافة اجتماعات</option>
+                            <option value="فعاليات ومؤتمرات">فعاليات ومؤتمرات</option>
+                            <option value="كاترينج">كاترينج</option>
+                            <option value="قهوة ومشروبات">قهوة ومشروبات</option>
+                            <option value="وجبات موظفين">وجبات موظفين</option>
+                            <option value="خدمات VIP">خدمات VIP</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1.5">الميزانية التقديرية</label>
+                        <input type="text" id="add-visit-budget" placeholder="مثال: 50,000 ر.س" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block font-bold text-slate-600 mb-1.5">ملاحظات الزيارة</label>
+                        <textarea id="add-visit-notes" rows="2" placeholder="ملاحظات ميدانية وتوصيات..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                    </div>
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1.5">احتمالية التعاقد</label>
+                        <select id="add-visit-probability" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                            <option value="مرتفع">مرتفع</option>
+                            <option value="متوسط">متوسط</option>
+                            <option value="منخفض">منخفض</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1.5">أولوية المتابعة</label>
+                        <select id="add-visit-priority" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                            <option value="عاجلة">عاجلة</option>
+                            <option value="عادية">عادية</option>
+                            <option value="لاحقاً">لاحقاً</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1.5">حالة الزيارة</label>
+                        <select id="add-visit-status" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                            <option value="scheduled">مجدولة</option>
+                            <option value="completed">منجزة</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="border-t border-slate-100 pt-4 flex gap-3 justify-end shrink-0">
+                    <button type="button" onclick="closeAddVisitModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-all">إلغاء</button>
+                    <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm">حفظ وجدولة الزيارة</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 7. Visit Detail Report Modal -->
+    <div id="modal-visit-detail" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg overflow-hidden transform transition-all h-[80vh] flex flex-col">
+            <div class="bg-indigo-950 text-white p-5 flex justify-between items-center shrink-0">
+                <h3 class="font-bold text-sm"><i class="fa-solid fa-file-invoice text-indigo-300"></i> تقرير الزيارة الميدانية المعتمد</h3>
+                <button onclick="closeVisitDetailReportModal()" class="text-slate-400 hover:text-white transition-all"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-6 space-y-3 text-xs" id="visit-report-print-area"></div>
+            <div class="border-t border-slate-100 p-4 flex gap-3 justify-end shrink-0">
+                <button type="button" onclick="closeVisitDetailReportModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-all">إغلاق</button>
+                <button type="button" onclick="window.print()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm"><i class="fa-solid fa-print"></i> طباعة التقرير</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. Add Task Modal -->
+    <div id="modal-task" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-xl overflow-hidden transform transition-all h-[85vh] flex flex-col">
+            <div class="bg-indigo-950 text-white p-5 flex justify-between items-center shrink-0">
+                <h3 class="font-bold text-sm"><i class="fa-solid fa-list-check text-indigo-300"></i> إسناد مهمة جديدة</h3>
+                <button onclick="closeAddTaskModal()" class="text-slate-400 hover:text-white transition-all"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="task-form" onsubmit="saveNewTask(event)" class="flex-1 overflow-y-auto p-6 space-y-4 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-600 mb-1.5">عنوان المهمة</label>
+                    <input type="text" id="add-task-title" required placeholder="مثال: متابعة عرض السعر مع العميل" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1.5">المؤسسة / العميل</label>
+                        <select id="add-task-org" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"></select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1.5">نوع المهمة</label>
+                        <select id="add-task-type" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                            <option value="زيارة ميدانية">زيارة ميدانية</option>
+                            <option value="اجتماع">اجتماع</option>
+                            <option value="اتصال">اتصال</option>
+                            <option value="متابعة">متابعة</option>
+                            <option value="عرض سعر">عرض سعر</option>
+                            <option value="عقد">عقد</option>
+                            <option value="تحصيل">تحصيل</option>
+                            <option value="فعالية">فعالية</option>
+                            <option value="شكوى">شكوى</option>
+                            <option value="مهمة داخلية">مهمة داخلية</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1.5">الأولوية</label>
+                        <select id="add-task-priority" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                            <option value="عاجلة">عاجلة</option>
+                            <option value="عالية">عالية</option>
+                            <option value="متوسطة">متوسطة</option>
+                            <option value="منخفضة">منخفضة</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1.5">القسم</label>
+                        <select id="add-task-dept" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                            <option value="العلاقات الخارجية">العلاقات الخارجية</option>
+                            <option value="المبيعات">المبيعات</option>
+                            <option value="خدمة العملاء">خدمة العملاء</option>
+                            <option value="الجودة">الجودة</option>
+                            <option value="المالية">المالية</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1.5">الفرع</label>
+                        <input type="text" id="add-task-branch" placeholder="الفرع الرئيسي" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1.5">الموظف المكلف</label>
+                        <input type="text" id="add-task-assigned" placeholder="أحمد محمد" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1.5">الموعد النهائي (تاريخ)</label>
+                        <input type="date" id="add-task-due-date" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1.5">وقت التنفيذ</label>
+                        <input type="text" id="add-task-due-time" placeholder="مثال: 10:00 ص" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-600 mb-1.5">وصف المهمة</label>
+                    <textarea id="add-task-desc" rows="3" placeholder="تفاصيل المهمة المطلوبة..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                </div>
+                <div class="border-t border-slate-100 pt-4 flex gap-3 justify-end shrink-0">
+                    <button type="button" onclick="closeAddTaskModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-all">إلغاء</button>
+                    <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm">حفظ وإسناد المهمة</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 9. Add Event Modal -->
+    <div id="modal-event" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-xl overflow-hidden transform transition-all h-[85vh] flex flex-col">
+            <div class="bg-indigo-950 text-white p-5 flex justify-between items-center shrink-0">
+                <h3 class="font-bold text-sm"><i class="fa-solid fa-champagne-glasses text-indigo-300"></i> إضافة مناسبة / فعالية جديدة</h3>
+                <button onclick="closeAddEventModal()" class="text-slate-400 hover:text-white transition-all"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="event-form" onsubmit="saveNewEvent(event)" class="flex-1 overflow-y-auto p-6 space-y-4 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-600 mb-1.5">اسم الفعالية / المناسبة</label>
+                    <input type="text" id="add-event-name" required placeholder="مثال: مؤتمر الابتكار السنوي" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1.5">المؤسسة</label>
+                        <select id="add-event-org" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"></select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1.5">نوع الفعالية</label>
+                        <select id="add-event-type" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                            <option value="مؤتمر">مؤتمر</option>
+                            <option value="معرض">معرض</option>
+                            <option value="حفل">حفل</option>
+                            <option value="اجتماع رسمي">اجتماع رسمي</option>
+                            <option value="ورشة عمل">ورشة عمل</option>
+                            <option value="فعالية شركات">فعالية شركات</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1.5">تاريخ الفعالية</label>
+                        <input type="date" id="add-event-date" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1.5">وقت الفعالية</label>
+                        <input type="text" id="add-event-time" placeholder="مثال: 09:00 ص - 17:00 م" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1.5">موقع الفعالية</label>
+                        <input type="text" id="add-event-location" required placeholder="اسم القاعة أو المكان" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1.5">عدد الحضور المتوقع</label>
+                        <input type="number" id="add-event-count" min="1" value="50" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1.5">القيمة المالية (ر.س)</label>
+                        <input type="number" id="add-event-value" min="0" step="100" placeholder="مثال: 25000" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1.5">حالة الفعالية</label>
+                        <select id="add-event-status" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                            <option value="confirmed">مؤكدة</option>
+                            <option value="pending">قيد التأكيد</option>
+                            <option value="completed">منتهية</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="border-t border-slate-100 pt-4 flex gap-3 justify-end shrink-0">
+                    <button type="button" onclick="closeAddEventModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-all">إلغاء</button>
+                    <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-all shadow-sm">حفظ الفعالية</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 items-center pointer-events-none"></div>
+
     <script>
         // FOOD & BEVERAGES INITIAL STATE
         let items = [
@@ -1820,7 +2120,7 @@
 
         function deleteItem(id) {
             if(confirm("هل أنت متأكد من حذف هذا الصنف؟")) {
-                items = items.filter(it => item.id !== id);
+                items = items.filter(it => it.id !== id);
                 syncLocalStorage();
                 renderItems();
                 showToast("تم الحذف بنجاح", "success");
@@ -2574,6 +2874,383 @@
                 location.reload();
             }
         }
+
+        // ================== TOAST NOTIFICATIONS ==================
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            if (!container) { console.log(message); return; }
+
+            const colors = {
+                success: 'bg-emerald-600',
+                error: 'bg-rose-600',
+                info: 'bg-indigo-600'
+            };
+            const icons = {
+                success: 'fa-circle-check',
+                error: 'fa-circle-exclamation',
+                info: 'fa-circle-info'
+            };
+
+            const toast = document.createElement('div');
+            toast.className = `pointer-events-auto ${colors[type] || colors.success} text-white text-xs font-bold px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 max-w-sm transition-all duration-300 opacity-0 translate-y-2`;
+            toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.success}"></i><span>${message}</span>`;
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('opacity-0', 'translate-y-2');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3200);
+        }
+
+        // ================== NOTIFICATIONS DROPDOWN ==================
+        function toggleNotifications() {
+            document.getElementById('notifications-dropdown').classList.toggle('hidden');
+        }
+
+        document.addEventListener('click', function(e) {
+            const dropdown = document.getElementById('notifications-dropdown');
+            const bellBtn = e.target.closest('button[onclick="toggleNotifications()"]');
+            if (dropdown && !dropdown.classList.contains('hidden') && !dropdown.contains(e.target) && !bellBtn) {
+                dropdown.classList.add('hidden');
+            }
+        });
+
+        // ================== PROFILE MODAL ==================
+        function openProfileModal() {
+            document.getElementById('modal-profile').classList.remove('hidden');
+        }
+        function closeProfileModal() {
+            document.getElementById('modal-profile').classList.add('hidden');
+        }
+        function saveProfile(e) {
+            e.preventDefault();
+            const fullName = document.getElementById('input-full-name').value;
+            document.getElementById('profile-name').innerText = fullName;
+            document.getElementById('user-header-name').innerText = fullName;
+            const userNameDisplay = document.getElementById('user-name-display');
+            if (userNameDisplay) userNameDisplay.innerText = fullName;
+            document.getElementById('profile-avatar').innerText = fullName.trim().charAt(0) || 'أ';
+            closeProfileModal();
+            showToast('تم تحديث بيانات الملف الشخصي بنجاح', 'success');
+        }
+        function triggerPasswordReset() {
+            showToast('تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني', 'success');
+        }
+
+        // ================== DASHBOARD PERIOD SWITCH ==================
+        function changePeriod(idx, btnEl) {
+            document.querySelectorAll('.period-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-600', 'text-white');
+                btn.classList.add('bg-white', 'text-slate-600', 'border', 'border-slate-200');
+            });
+            btnEl.classList.add('bg-indigo-600', 'text-white');
+            btnEl.classList.remove('bg-white', 'text-slate-600', 'border', 'border-slate-200');
+            renderDashboardData();
+        }
+
+        // ================== ORGANIZATION (CRM) ADD / DELETE ==================
+        function openAddOrgModal() {
+            document.getElementById('modal-org').classList.remove('hidden');
+        }
+        function closeOrgModal() {
+            document.getElementById('modal-org').classList.add('hidden');
+            document.getElementById('org-form').reset();
+        }
+        function saveNewOrg(e) {
+            e.preventDefault();
+            const newOrg = {
+                id: Date.now(),
+                name: document.getElementById('add-org-name').value,
+                sector: document.getElementById('add-org-sector').value,
+                classification: document.getElementById('add-org-class').value,
+                status: 'active',
+                contacts: 0,
+                visits: 0,
+                proposals: 0,
+                contracts: 0,
+                satisfaction: parseInt(document.getElementById('add-org-satisfaction').value) || 90,
+                address: document.getElementById('add-org-address').value,
+                mapLink: document.getElementById('add-org-map-link').value,
+                gm: document.getElementById('add-org-gm').value,
+                pm: document.getElementById('add-org-pm').value,
+                fm: document.getElementById('add-org-fm').value,
+                phone: document.getElementById('add-org-phone').value,
+                whatsapp: document.getElementById('add-org-whatsapp').value,
+                email: document.getElementById('add-org-email').value,
+                size: document.getElementById('add-org-size').value,
+                employees: parseInt(document.getElementById('add-org-employees').value) || 0,
+                branchesCount: parseInt(document.getElementById('add-org-branches-count').value) || 1,
+                branchesList: document.getElementById('add-org-branches-list').value,
+                notes: document.getElementById('add-org-notes-input').value
+            };
+            organizations.push(newOrg);
+            syncLocalStorage();
+            renderCRM();
+            closeOrgModal();
+            showToast('تم إضافة المؤسسة الجديدة بملف العملاء بنجاح', 'success');
+        }
+        function deleteOrganization(id) {
+            if (confirm('هل أنت متأكد من حذف هذه المؤسسة من ملف العملاء؟')) {
+                organizations = organizations.filter(o => o.id !== id);
+                syncLocalStorage();
+                renderCRM();
+                showToast('تم حذف المؤسسة بنجاح', 'success');
+            }
+        }
+
+        // ================== VISITS ADD / MAP / REPORT ==================
+        function openAddVisitModal() {
+            populateOrgSelectOptions();
+            document.getElementById('modal-visit').classList.remove('hidden');
+        }
+        function closeAddVisitModal() {
+            document.getElementById('modal-visit').classList.add('hidden');
+            document.getElementById('visit-form').reset();
+        }
+        function saveNewVisit(e) {
+            e.preventDefault();
+            const orgSel = document.getElementById('add-visit-org');
+            const orgId = parseInt(orgSel.value);
+            const org = organizations.find(o => o.id === orgId);
+
+            const newVisit = {
+                id: Date.now(),
+                orgId: orgId,
+                orgName: org ? org.name : 'غير محدد',
+                date: document.getElementById('add-visit-date').value,
+                time: document.getElementById('add-visit-time').value,
+                duration: document.getElementById('add-visit-duration').value || 'غير محدد',
+                location: document.getElementById('add-visit-location').value,
+                type: document.getElementById('add-visit-type').value,
+                status: document.getElementById('add-visit-status').value,
+                probability: document.getElementById('add-visit-probability').value,
+                team: document.getElementById('add-visit-team').value
+                    ? document.getElementById('add-visit-team').value.split('،').map(s => s.trim() || s).join(',').split(',').map(s=>s.trim()).filter(Boolean)
+                    : ['أحمد محمد'],
+                objectives: [],
+                notes: document.getElementById('add-visit-notes').value,
+                contactName: document.getElementById('add-visit-contact-name').value,
+                contactRole: document.getElementById('add-visit-contact-role').value,
+                contactPhone: document.getElementById('add-visit-contact-phone').value,
+                needs: [document.getElementById('add-visit-need').value],
+                budget: document.getElementById('add-visit-budget').value,
+                recommendations: 'بانتظار المتابعة الميدانية القادمة.',
+                assessmentPrio: document.getElementById('add-visit-priority').value,
+                assessmentStatus: 'متابعة'
+            };
+
+            visits.push(newVisit);
+            if (org) org.visits = (org.visits || 0) + 1;
+            syncLocalStorage();
+            renderVisits();
+            closeAddVisitModal();
+            showToast('تم جدولة الزيارة الميدانية بنجاح', 'success');
+        }
+
+        function focusVisitOnMap(orgName, location, date, status, visitId) {
+            document.getElementById('map-target-org').innerText = orgName;
+            document.getElementById('map-target-details').innerText = `تاريخ الزيارة: ${date} | الموقع: ${location}`;
+            document.getElementById('map-target-city').innerHTML = `<i class="fa-solid fa-city text-indigo-400"></i> ${location}`;
+            const statusLabel = status === 'completed' ? 'منجزة' : 'مجدولة';
+            document.getElementById('map-target-status').innerHTML = `<i class="fa-solid fa-circle text-emerald-500 text-[10px]"></i> ${statusLabel}`;
+        }
+
+        function openVisitDetailReportModal(visitId) {
+            const vis = visits.find(v => v.id === visitId);
+            if (!vis) return;
+            const area = document.getElementById('visit-report-print-area');
+            area.innerHTML = `
+                <div class="border-b border-slate-100 pb-3">
+                    <h4 class="font-bold text-sm text-slate-800">${vis.orgName}</h4>
+                    <p class="text-slate-400 mt-1">${vis.type}</p>
+                </div>
+                <div class="grid grid-cols-2 gap-3 text-slate-600">
+                    <p><strong class="text-slate-800">التاريخ:</strong> ${vis.date}</p>
+                    <p><strong class="text-slate-800">الوقت:</strong> ${vis.time}</p>
+                    <p><strong class="text-slate-800">المدة:</strong> ${vis.duration || '-'}</p>
+                    <p><strong class="text-slate-800">الموقع:</strong> ${vis.location}</p>
+                    <p><strong class="text-slate-800">المسؤول:</strong> ${vis.contactName || '-'}</p>
+                    <p><strong class="text-slate-800">رقم التواصل:</strong> ${vis.contactPhone || '-'}</p>
+                    <p><strong class="text-slate-800">فريق الزيارة:</strong> ${(vis.team || []).join(' و ')}</p>
+                    <p><strong class="text-slate-800">احتمالية التعاقد:</strong> ${vis.probability}</p>
+                </div>
+                <div class="pt-2 border-t border-slate-100">
+                    <p><strong class="text-slate-800">الاحتياج:</strong> ${(vis.needs || []).join('، ')}</p>
+                    <p class="mt-2"><strong class="text-slate-800">الميزانية التقديرية:</strong> ${vis.budget || '-'}</p>
+                </div>
+                <div class="pt-2 border-t border-slate-100">
+                    <p><strong class="text-slate-800">ملاحظات الزيارة:</strong></p>
+                    <p class="text-slate-500 mt-1">${vis.notes || 'لا توجد ملاحظات'}</p>
+                </div>
+                <div class="pt-2 border-t border-slate-100">
+                    <p><strong class="text-slate-800">التوصيات:</strong></p>
+                    <p class="text-slate-500 mt-1">${vis.recommendations || '-'}</p>
+                </div>
+            `;
+            document.getElementById('modal-visit-detail').classList.remove('hidden');
+        }
+        function closeVisitDetailReportModal() {
+            document.getElementById('modal-visit-detail').classList.add('hidden');
+        }
+
+        // ================== TASKS ADD / STATUS / DELETE ==================
+        function openAddTaskModal() {
+            populateOrgSelectOptions();
+            document.getElementById('modal-task').classList.remove('hidden');
+        }
+        function closeAddTaskModal() {
+            document.getElementById('modal-task').classList.add('hidden');
+            document.getElementById('task-form').reset();
+        }
+        function saveNewTask(e) {
+            e.preventDefault();
+            const taskCode = `TASK-2026-${String(tasks.length + 1).padStart(4, '0')}`;
+            const newTask = {
+                id: Date.now(),
+                taskCode: taskCode,
+                title: document.getElementById('add-task-title').value,
+                type: document.getElementById('add-task-type').value,
+                priority: document.getElementById('add-task-priority').value,
+                status: 'new',
+                dueDate: document.getElementById('add-task-due-date').value,
+                dueTime: document.getElementById('add-task-due-time').value,
+                orgName: document.getElementById('add-task-org').value,
+                assignedTo: document.getElementById('add-task-assigned').value || 'أحمد محمد',
+                description: document.getElementById('add-task-desc').value,
+                dept: document.getElementById('add-task-dept').value,
+                branch: document.getElementById('add-task-branch').value || 'الفرع الرئيسي',
+                creationDate: new Date().toISOString().slice(0, 10),
+                execDate: document.getElementById('add-task-due-date').value
+            };
+            tasks.push(newTask);
+            syncLocalStorage();
+            renderTasks();
+            closeAddTaskModal();
+            showToast('تم إسناد المهمة الجديدة بنجاح', 'success');
+        }
+        function updateTaskStatus(id, newStatus) {
+            const task = tasks.find(t => t.id === id);
+            if (task) {
+                task.status = newStatus;
+                syncLocalStorage();
+                renderTasks();
+                showToast('تم تحديث حالة المهمة', 'success');
+            }
+        }
+        function deleteTask(id) {
+            if (confirm('هل أنت متأكد من حذف هذا التكليف؟')) {
+                tasks = tasks.filter(t => t.id !== id);
+                syncLocalStorage();
+                renderTasks();
+                showToast('تم الحذف بنجاح', 'success');
+            }
+        }
+
+        // ================== EVENTS ADD / RENDER ==================
+        function openAddEventModal() {
+            populateOrgSelectOptions();
+            document.getElementById('modal-event').classList.remove('hidden');
+        }
+        function closeAddEventModal() {
+            document.getElementById('modal-event').classList.add('hidden');
+            document.getElementById('event-form').reset();
+        }
+        function saveNewEvent(e) {
+            e.preventDefault();
+            const value = parseFloat(document.getElementById('add-event-value').value) || 0;
+            const newEvent = {
+                id: Date.now(),
+                name: document.getElementById('add-event-name').value,
+                type: document.getElementById('add-event-type').value,
+                date: document.getElementById('add-event-date').value,
+                time: document.getElementById('add-event-time').value || 'غير محدد',
+                location: document.getElementById('add-event-location').value,
+                orgName: document.getElementById('add-event-org').value,
+                personCount: parseInt(document.getElementById('add-event-count').value) || 0,
+                status: document.getElementById('add-event-status').value,
+                value: value ? `${value.toLocaleString('ar-SA')} ر.س` : 'غير محدد'
+            };
+            events.push(newEvent);
+            syncLocalStorage();
+            renderEvents();
+            closeAddEventModal();
+            showToast('تم إضافة الفعالية الجديدة بنجاح', 'success');
+        }
+        function renderEvents() {
+            const grid = document.getElementById('events-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            const statusBadge = {
+                confirmed: '<span class="bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded text-[10px] font-bold">مؤكدة</span>',
+                pending: '<span class="bg-amber-50 text-amber-700 px-2.5 py-0.5 rounded text-[10px] font-bold">قيد التأكيد</span>',
+                completed: '<span class="bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded text-[10px] font-bold">منتهية</span>'
+            };
+
+            events.forEach(ev => {
+                grid.innerHTML += `
+                    <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3 hover:shadow-md transition-all">
+                        <div class="flex justify-between items-start">
+                            <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-bold">${ev.type}</span>
+                            ${statusBadge[ev.status] || statusBadge.pending}
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-sm text-slate-800">${ev.name}</h4>
+                            <p class="text-xs text-slate-400 mt-1"><i class="fa-solid fa-building text-[10px]"></i> ${ev.orgName}</p>
+                        </div>
+                        <div class="text-xs text-slate-500 space-y-1 border-t border-slate-100 pt-3">
+                            <p><i class="fa-regular fa-calendar text-[10px] w-4 text-indigo-500"></i> ${ev.date} | ${ev.time}</p>
+                            <p><i class="fa-solid fa-location-dot text-[10px] w-4 text-indigo-500"></i> ${ev.location}</p>
+                            <p><i class="fa-solid fa-users text-[10px] w-4 text-indigo-500"></i> ${ev.personCount} حضور متوقع</p>
+                        </div>
+                        <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+                            <span class="text-[10px] text-slate-400 font-bold">القيمة المالية</span>
+                            <span class="text-sm font-extrabold text-indigo-600">${ev.value}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // ================== DOCUMENTS SEARCH ==================
+        function searchDocuments() {
+            const query = document.getElementById('search-docs').value.toLowerCase();
+            const filtered = documents.filter(d => d.name.toLowerCase().includes(query));
+            const body = document.getElementById('documents-table-body');
+            body.innerHTML = '';
+            filtered.forEach(doc => {
+                let catBadge = doc.category === 'عقود' ? 'bg-violet-50 text-violet-700' : doc.category === 'عروض' ? 'bg-sky-50 text-sky-700' : 'bg-amber-50 text-amber-700';
+                body.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="p-3 font-bold text-slate-800">${doc.name}</td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded font-bold text-[10px] ${catBadge}">${doc.category}</span></td>
+                        <td class="p-3 text-slate-500">${doc.date}</td>
+                        <td class="p-3 text-slate-500">${doc.version}</td>
+                        <td class="p-3">
+                            <button onclick="showToast('جاري تنزيل الملف بأحدث نسخة...', 'success')" class="text-indigo-600 hover:underline font-bold">تنزيل نسخة</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // ================== INITIAL PAGE LOAD ==================
+        document.addEventListener('DOMContentLoaded', function() {
+            populateOrgSelectOptions();
+            renderDashboardData();
+            renderCRM();
+            renderItems();
+            renderProposals();
+            renderContracts();
+            renderVisits();
+            renderTasks();
+            renderEvents();
+            renderDocuments();
+        });
     </script>
 </body>
 </html>
